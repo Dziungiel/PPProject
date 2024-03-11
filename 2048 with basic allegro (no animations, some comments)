@@ -1,0 +1,332 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <stdbool.h>
+
+#include <allegro5/allegro5.h>
+#include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro_image.h>
+
+#define SIZE 4
+
+int tabela_stanu[SIZE][SIZE];
+int punkty;
+
+bool czy_koniec() {
+	int licznik = 0;
+	for(int w = 0; w < SIZE; w++)
+		for(int h = 0; h < SIZE; h++)
+			if(tabela_stanu[w][h] == 0) licznik ++;//licznik wskazuje ile pustych miejsc jeszcze jest
+    if(licznik==0){//jeśli nie ma pustych miejsc to sprawdzamy czy te same liczby są obok siebie w wierszu
+        for(int w=0; w<SIZE; w++){
+            for(int h=0; h<SIZE-1; h++){
+               if(tabela_stanu[w][h]==tabela_stanu[w][h+1]) licznik++;
+            }
+        }
+    }
+    if(licznik==0){//jeśli ani nie ma pustych miejsc ani tych samych liczb obok siebie w wierszu sprawdzamy kolumny
+        for(int h=0; h<SIZE; h++){
+            for(int w=0; w<SIZE-1; w++){
+               if(tabela_stanu[w][h]==tabela_stanu[w+1][h]) licznik++;
+            }
+        }
+    }
+	return licznik == 0 || punkty >= 2048;
+}
+
+
+void losowanie_dwojek() {
+	srand(time(0));
+	for(int licznik = 0; licznik < 2;) {
+		int l = rand() % (SIZE*SIZE);
+		int w = l % SIZE;
+		int h = l / SIZE;
+		if(tabela_stanu[w][h] == 0) {
+			tabela_stanu[w][h] = 2;
+			licznik++;
+		}
+	}
+}
+
+void losowanie_liczb() {
+	srand(time(0));
+	int licznik = 0;
+	for(int w = 0; w < SIZE; w++)
+		for(int h = 0; h < SIZE; h++)
+			if(tabela_stanu[w][h] == 0) licznik ++;
+	while (licznik) {
+		int l = rand() % (SIZE*SIZE);
+		int w = l % SIZE;
+		int h = l / SIZE;
+		if(tabela_stanu[w][h] == 0) {
+			tabela_stanu[w][h] = 2 * (1 + rand() % 10 ? 1 : 0);
+			break;
+		}
+	}
+}
+
+void w_gore() {
+	for(int w = 0; w < SIZE; w++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int h = 0; h < SIZE - 1; h++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h+1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h+1];
+					tabela_stanu[w][h+1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int h = 0; h < SIZE - 1; h++) {
+			if(tabela_stanu[w][h] == tabela_stanu[w][h+1]) {
+				tabela_stanu[w][h] += tabela_stanu[w][h+1];
+				tabela_stanu[w][h+1] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int h = 0; h < SIZE - 1; h++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h+1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h+1];
+					tabela_stanu[w][h+1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void w_lewo() {
+	for(int h = 0; h < SIZE; h++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int w = 0; w < SIZE - 1; w++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w+1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w+1][h];
+					tabela_stanu[w+1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int w = 0; w < SIZE - 1; w++) {
+			if(tabela_stanu[w][h] == tabela_stanu[w+1][h]) {
+				tabela_stanu[w][h] += tabela_stanu[w+1][h];
+				tabela_stanu[w+1][h] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int w = 0; w < SIZE - 1; w++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w+1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w+1][h];
+					tabela_stanu[w+1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void w_prawo() {
+	for(int h = 0; h < SIZE; h++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int w = SIZE -1 ; w > 0 - 1; w--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w-1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w-1][h];
+					tabela_stanu[w-1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int w = SIZE -1 ; w > 0 - 1; w--) {
+			if(tabela_stanu[w][h] == tabela_stanu[w-1][h]) {
+				tabela_stanu[w][h] += tabela_stanu[w-1][h];
+				tabela_stanu[w-1][h] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int w = SIZE -1 ; w > 0 - 1; w--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w-1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w-1][h];
+					tabela_stanu[w-1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void w_dol() {
+	for(int w = 0; w < SIZE; w++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int h = SIZE - 1; h > 0; h--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h-1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h-1];
+					tabela_stanu[w][h-1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int h = SIZE - 1; h > 0; h--) {
+			if(tabela_stanu[w][h] == tabela_stanu[w][h-1]) {
+				tabela_stanu[w][h] += tabela_stanu[w][h-1];
+				tabela_stanu[w][h-1] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int h = SIZE - 1; h > 0; h--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h-1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h-1];
+					tabela_stanu[w][h-1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void wyswietlanie() {
+	system("cls");
+	printf("Punkty: %d \n\n\n",punkty);
+	for(int h = 0; h < SIZE; h++) {
+		for(int w = 0; w < SIZE; w++)
+			printf("%d\t",tabela_stanu[w][h]);
+		printf("\n\n");
+	}
+}
+
+void must_init(bool test, const char *description)
+{
+    if(test) return;
+
+    printf("Nie moge uruchomic %s\n", description);
+    system("pause");
+
+    exit(EXIT_FAILURE);
+}
+
+int main()
+{
+	int max = 0;
+	FILE * fmax = fopen("max_punkty.txt", "r");
+	if(fmax){
+		fscanf(fmax, "%d", &max);
+		fclose(fmax);
+	}
+
+	punkty = 0;
+
+	for(int w = 0; w < SIZE; w++)
+		for(int h = 0; h < SIZE; h++)
+			tabela_stanu[w][h] = 0;
+
+	losowanie_dwojek();
+
+	must_init(al_init(), "allegro");
+    must_init(al_install_keyboard(), "keyboard");
+
+    ALLEGRO_TIMER* timer = al_create_timer(1.0 / 30.0);//klatki; przyda się do animacji
+    must_init(timer, "timer");
+
+    ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();//kolejka zdarzeń, gdy zdarzenie będzie potrzebne zostanie pobrane z kolejki, dzięki temu cały program nie przerywa swojego działania
+    must_init(queue, "queue");
+
+    ALLEGRO_DISPLAY* disp = al_create_display(330, 432);//tej wielkości będzie okienko, tyle pikseli ma plansza
+    must_init(disp, "display");
+
+    must_init(al_init_ttf_addon(), "ttf addon");
+
+	ALLEGRO_FONT* font = al_load_ttf_font("tahoma.ttf", 32, 0);//tą czscionką będy wypisywane cyfry
+    must_init(font, "font");
+
+    must_init(al_init_image_addon(), "image addon");
+
+    ALLEGRO_BITMAP* plansza = al_load_bitmap("2048.jpg");//wyświetlenie planszy w okienku
+    must_init(plansza, "plansza");
+
+    al_register_event_source(queue, al_get_keyboard_event_source());
+    al_register_event_source(queue, al_get_display_event_source(disp));
+    al_register_event_source(queue, al_get_timer_event_source(timer));
+
+    bool done = false;
+    bool redraw = true;
+    ALLEGRO_EVENT event;
+
+    al_start_timer(timer);
+    for(;;) {
+        al_wait_for_event(queue, &event);//oczekiwanie na event pobrany z kolejki
+
+        switch(event.type) {
+            case ALLEGRO_EVENT_TIMER:
+                // tu animacje
+                redraw = true;
+                break;
+            case ALLEGRO_EVENT_KEY_DOWN://wporwadzenie z klawiatury
+				if(!czy_koniec())//jeśli są możliwe ruchy wykonujemy kolejne polecenia dla odpowiednich przycisków klawiatury
+				switch(event.keyboard.keycode) {
+					case ALLEGRO_KEY_LEFT: w_lewo(); losowanie_liczb(); wyswietlanie(); break;
+					case ALLEGRO_KEY_RIGHT: w_prawo(); losowanie_liczb(); wyswietlanie(); break;
+					case ALLEGRO_KEY_UP: w_gore(); losowanie_liczb(); wyswietlanie(); break;
+					case ALLEGRO_KEY_DOWN: w_dol(); losowanie_liczb(); wyswietlanie(); break;
+				}
+				done = event.keyboard.keycode == ALLEGRO_KEY_ESCAPE;//escape by wyjść z gry
+				break;
+            case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                done = true;
+                break;
+        }
+
+        if(done) break; // poprawic
+
+        if(redraw && al_is_event_queue_empty(queue)) {
+
+            al_clear_to_color(al_map_rgb(0, 0, 0));//zamazuje całe okienko na czarno
+
+            al_draw_bitmap(plansza, 0, 0, 0);//rysuje plansze
+
+            al_draw_textf(font, czy_koniec()?al_map_rgb(255, 0, 0):al_map_rgb(0, 0, 0), 210, 20, ALLEGRO_ALIGN_CENTRE, "%d", punkty);//wypisuje na czarno punkty pośdrodkując do wybranych pikseli na bitmapie
+            al_draw_textf(font, czy_koniec()?al_map_rgb(0, 255, 0):al_map_rgb(0, 0, 0), 285, 20, ALLEGRO_ALIGN_CENTRE, "%d", max);//wypisuje maks z poprzednich krozgrywek
+
+            for(int h = 0; h < SIZE; h++)
+				for(int w = 0; w < SIZE; w++)
+					if(tabela_stanu[w][h])//jeśli w danym miejscu w tabeli jest jakaś płytka to rysuje cyfrę
+		            	al_draw_textf(font, al_map_rgb(0, 0, 255), 50+w*78, 130+h*78, ALLEGRO_ALIGN_CENTRE, "%d", tabela_stanu[w][h]);//rysuje cyfrę zapisaną w tabeli; dla kolejnych liczb przesuwa miejsce rysowania o 78 pikseli
+
+            al_flip_display();//wyświetla
+
+            redraw = false;
+        }
+    }
+
+    al_destroy_bitmap(plansza);
+    al_destroy_font(font);
+    al_destroy_display(disp);
+    al_destroy_timer(timer);
+    al_destroy_event_queue(queue);
+
+    if(punkty>max) {//wpisywanie nowego rekordu do pliku
+		fmax = fopen("max_punkty.txt", "w");
+		if(fmax){
+			fprintf(fmax, "%d", punkty);
+			fclose(fmax);
+		}
+	}
+
+    return EXIT_SUCCESS;
+}
