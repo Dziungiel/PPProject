@@ -2,6 +2,8 @@
 
 -zabezpiecze przed pojawianiem się losowania gdy nie ma ruchu
 
+-dodam plik graficzny i z rekordem
+
 Zostało:
 
 +dodanie animacji (podstawienie kolorowej płytki bez numerka i nałożenie na to poruszającego się numerka lub podstawienie płytek z numerkami i ich animacja)
