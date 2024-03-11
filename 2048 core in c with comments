@@ -1,0 +1,243 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <stdbool.h>
+
+#define SIZE 4
+
+int tabela_stanu[SIZE][SIZE];
+int punkty;
+
+bool czy_koniec() {
+	int licznik = 0;
+	for(int w = 0; w < SIZE; w++)
+		for(int h = 0; h < SIZE; h++)
+			if(tabela_stanu[w][h] == 0) licznik ++;//licznik wskazuje ile pustych miejsc jeszcze jest
+    if(licznik==0){//jeśli nie ma pustych miejsc to sprawdzamy czy te same liczby są obok siebie w wierszu
+        for(int w=0; w<SIZE; w++){
+            for(int h=0; h<SIZE-1; h++){
+               if(tabela_stanu[w][h]==tabela_stanu[w][h+1]) licznik++;
+            }
+        }
+    }
+    if(licznik==0){//jeśli ani nie ma pustych miejsc ani tych samych liczb obok siebie w wierszu sprawdzamy kolumny
+        for(int h=0; h<SIZE; h++){
+            for(int w=0; w<SIZE-1; w++){
+               if(tabela_stanu[w][h]==tabela_stanu[w+1][h]) licznik++;
+            }
+        }
+    }
+	return licznik == 0;
+}//funkcja sprawdza czy zostaje nam jakiś ruch
+
+void losowanie_dwojek() {
+	srand(time(0));
+	for(int licznik = 0; licznik < 2;) {
+		int l = rand() % (SIZE*SIZE);//dzięki size losowanie może zostać dopasowane do innych rozmiarów planszy (tu odbywa się losowanie jednego z 16 miejsc)
+		int w = l % SIZE;//wyciągnięcie numeru wiersza z nr wysolowanego miejcsa
+		int h = l / SIZE;//wyciągnięcie numeru kolumny z nr wysolowanego miejcsa
+		if(tabela_stanu[w][h] == 0) {
+			tabela_stanu[w][h] = 2;//jeśli mniejsce jest puste wstaw 2
+			licznik++;//wysoluj miejsce dla drugiej 2
+		}
+	}
+}//losowanie startowe w grze
+
+void losowanie_liczb() {
+	srand(time(0));
+	int licznik = 0;
+	for(int w = 0; w < SIZE; w++)
+		for(int h = 0; h < SIZE; h++)
+			if(tabela_stanu[w][h] == 0) licznik ++;//licznik zapisuje ile pustych miejsc jest jeszcze
+	while (licznik) {//losowanie odbywa się tylko gdy jest jakies puste miejsce (jest jakies 0)
+		int l = rand() % (SIZE*SIZE);
+		int w = l % SIZE;
+		int h = l / SIZE;
+		if(tabela_stanu[w][h] == 0) {//jeśli to miejsce jest puste to
+			tabela_stanu[w][h] = 2 * (rand() % 4 ? 1 : 2);//wpisywane jest 2 z okazjonalną możliwością wylosowania 4 (gdy z modulo wyjdzie liczba inna niż 0 to korzystamy z 1, czyli 1*2=2)
+			break;//losowanie z sukcesem odbywa się tylko raz
+		}
+	}
+}
+
+void w_gore() {
+	for(int w = 0; w < SIZE; w++) {
+		bool zamiana;
+		do {
+			zamiana = false;//zmiana nie zaistniała
+			for(int h = 0; h < SIZE - 1; h++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h+1] != 0) {//jeśli bliżej brzegu istnieje wolne miejsce to przesuwamy kafelek
+					tabela_stanu[w][h] = tabela_stanu[w][h+1];
+					tabela_stanu[w][h+1] = 0;
+					zamiana = true;//zmiana zaistniała
+				}
+			}
+		} while(zamiana);//jeśli nastąpiło przesunięcie kafelków sprawdzamy czy należy połączyć kafelki brzegowe
+		for(int h = 0; h < SIZE - 1; h++) {
+			if(tabela_stanu[w][h] == tabela_stanu[w][h+1]) {//łączenie się 2 tych samych kafelków najbliżej brzegu
+				tabela_stanu[w][h] += tabela_stanu[w][h+1];
+				tabela_stanu[w][h+1] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;//ustawiamy flagę zmiany od nowa na pustą, żeby wiedzieć czy pojawiło się puste pole po połączeniu kafelków
+			for(int h = 0; h < SIZE - 1; h++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h+1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h+1];
+					tabela_stanu[w][h+1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);//do...while'em dosuwamy pozostały kabelek jeśli te z brzegu się połączyły
+	}
+}
+
+void w_lewo() {
+	for(int h = 0; h < SIZE; h++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int w = 0; w < SIZE - 1; w++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w+1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w+1][h];
+					tabela_stanu[w+1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int w = 0; w < SIZE - 1; w++) {
+			if(tabela_stanu[w][h] == tabela_stanu[w+1][h]) {
+				tabela_stanu[w][h] += tabela_stanu[w+1][h];
+				tabela_stanu[w+1][h] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int w = 0; w < SIZE - 1; w++) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w+1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w+1][h];
+					tabela_stanu[w+1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void w_prawo() {
+	for(int h = 0; h < SIZE; h++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int w = SIZE -1 ; w > 0 - 1; w--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w-1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w-1][h];
+					tabela_stanu[w-1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int w = SIZE -1 ; w > 0 - 1; w--) {
+			if(tabela_stanu[w][h] == tabela_stanu[w-1][h]) {
+				tabela_stanu[w][h] += tabela_stanu[w-1][h];
+				tabela_stanu[w-1][h] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int w = SIZE -1 ; w > 0 - 1; w--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w-1][h] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w-1][h];
+					tabela_stanu[w-1][h] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void w_dol() {
+	for(int w = 0; w < SIZE; w++) {
+		bool zamiana;
+		do {
+			zamiana = false;
+			for(int h = SIZE - 1; h > 0; h--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h-1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h-1];
+					tabela_stanu[w][h-1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+		for(int h = SIZE - 1; h > 0; h--) {
+			if(tabela_stanu[w][h] == tabela_stanu[w][h-1]) {
+				tabela_stanu[w][h] += tabela_stanu[w][h-1];
+				tabela_stanu[w][h-1] = 0;
+				punkty += tabela_stanu[w][h];
+				break;
+			}
+		}
+		do {
+			zamiana = false;
+			for(int h = SIZE - 1; h > 0; h--) {
+				if(tabela_stanu[w][h] == 0 && tabela_stanu[w][h-1] != 0) {
+					tabela_stanu[w][h] = tabela_stanu[w][h-1];
+					tabela_stanu[w][h-1] = 0;
+					zamiana = true;
+				}
+			}
+		} while(zamiana);
+	}
+}
+
+void wyswietlanie() {
+	system("cls");//czyści ekran
+	printf("Punkty: %d \n\n\n",punkty);
+	for(int h = 0; h < SIZE; h++) {
+		for(int w = 0; w < SIZE; w++)
+			printf("%d\t",tabela_stanu[w][h]);
+		printf("\n\n");
+	}
+}
+
+int main()
+{
+	punkty = 0;
+    //to można napisać jako funkcję; uzupełnia tabelę zerami
+	for(int w = 0; w < SIZE; w++)
+		for(int h = 0; h < SIZE; h++)
+			tabela_stanu[w][h] = 0;
+
+	losowanie_dwojek();
+
+	wyswietlanie();
+
+	unsigned char c;
+    do {
+
+    	printf("\nNacisnij 'w a s z' aby ruszyc albo 'q' by wyjsc ");//kontrolki oraz opcja wyjścia
+		c = getc(stdin);//pobieranie polecenia z klawiatury
+
+		switch(c) {//przesunięcie kafelków zgodnie z wczytanym wcześniej z klawiatury znakiem
+			case 'w': w_gore(); losowanie_liczb(); break; // w górę
+			case 'a': w_lewo(); losowanie_liczb(); break; // w lewo
+			case 's': w_prawo(); losowanie_liczb(); break; // w prawo
+			case 'z': w_dol(); losowanie_liczb(); break; // w dół
+			//ewentualnie case 'q': return EXIT_SUCCESS; gdybyśmy chcieli wyjść przed jakimkolwiek ruchem
+		}
+
+		wyswietlanie();
+
+    } while (c != 'q' && !czy_koniec());//gdy nie naciśnięto q by wyjść lub gdy zostały ruchy na planszy wyświetlamy pod nią wiadomość
+
+    printf("KONIEC\n\n'q' by wyjsc ");
+    while (getc(stdin) != 'q');
+
+    return EXIT_SUCCESS;//można tu wpisać 0 zamiast exit_succes
+}
